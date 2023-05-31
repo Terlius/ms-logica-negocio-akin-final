@@ -24,7 +24,7 @@ export class Adviser extends Entity {
 
   @property({
     type: 'string',
-   
+
   })
   middleName?: string;
 
@@ -36,7 +36,7 @@ export class Adviser extends Entity {
 
   @property({
     type: 'string',
-    
+
   })
   secondSurname?: string;
 
@@ -45,12 +45,18 @@ export class Adviser extends Entity {
   })
   email: string;
 
- 
+
   @property({
     type: 'string',
     required: true,
   })
   phone: string;
+
+  @property({
+    type: 'boolean',
+    default: false,
+  })
+  accepted?: boolean;
 
   @hasMany(() => Property)
   properties: Property[];
