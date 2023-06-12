@@ -1,26 +1,28 @@
-import {inject} from '@loopback/core';
+import { inject } from '@loopback/core';
 import {
   get,
   HttpErrors,
   oas,
   param,
-  post, Request,
+  post,
+  Request,
   requestBody,
   Response,
-  RestBindings
+  RestBindings,
 } from '@loopback/rest';
 import path from 'path';
-import {promisify} from 'util';
+import { promisify } from 'util';
 import fs from 'fs';
 import multer from 'multer';
+
 const readdir = promisify(fs.readdir);
 import { GeneralConfig } from '../config/general.config';
+
 const parentDir = path.join(__dirname, '../../');
-console.log(parentDir)
+
 
 export class FileManagerController {
   constructor() {}
-
 
   @post('up-image-property', {
     responses: {
@@ -28,7 +30,7 @@ export class FileManagerController {
         content: {
           'application/json': {
             schema: {
-              type: 'object'
+              type: 'object',
             },
           },
         },
@@ -40,7 +42,6 @@ export class FileManagerController {
     @inject(RestBindings.Http.RESPONSE) response: Response,
     @requestBody.file() request: Request,
   ): Promise<Object | false> {
-
     const filePath = path.join(parentDir, GeneralConfig.PathImagenesProperty);
     let res = await this.StoreFileToPath(
       filePath,
@@ -58,7 +59,10 @@ export class FileManagerController {
     return res;
   }
 
-
+  /**
+   * Return a config for multer storage
+   * @param path
+   */
   private GetMulterStorageConfig(path: string) {
     var filename: string = '';
     const storage = multer.diskStorage({
@@ -74,9 +78,11 @@ export class FileManagerController {
   }
 
   /**
-   *
+   * store the file in a specific path
+   * @param storePath
+   * @param request
+   * @param response
    */
-
   private StoreFileToPath(
     storePath: string,
     fieldname: string,
@@ -84,19 +90,21 @@ export class FileManagerController {
     response: Response,
     acceptedExt: string[],
   ): Promise<object> {
+    //console.log(storePath);
 
     return new Promise<object>((resolve, reject) => {
       const storage = this.GetMulterStorageConfig(storePath);
+      //console.log(storage);
       const upload = multer({
         storage: storage,
         fileFilter: function (req, file, callback) {
           var ext = path.extname(file.originalname).toUpperCase();
-
+          console.log(ext);
           if (acceptedExt.includes(ext)) {
             return callback(null, true);
           }
           return callback(
-            new HttpErrors[400]('this format file is not supported.'),
+            new HttpErrors[400]('La extensión del archivo no es admitida para su almacenamiento.'),
           );
         },
         limits: {},
@@ -110,15 +118,13 @@ export class FileManagerController {
     });
   }
 
+  /** Descarga de Archivos */
 
-  /**
-   * file download
-   */
   @get('/archivos/{type}', {
     responses: {
       200: {
         content: {
-          // string []
+          // string[]
           'application/json': {
             schema: {
               type: 'array',
@@ -128,59 +134,56 @@ export class FileManagerController {
             },
           },
         },
-        description: 'a list of files',
+        description: 'Una lista de archivos',
       },
     },
   })
-  async obtenerListaArchivos(@param.path.number('type') type: number): Promise<string[]> {
-    const folderPath = this.obtenerArchivosTipo(type);
+  async ObtenerListaDeArchivos(@param.path.number('type') type: number) {
+    const folderPath = this.ObtenerArchivosPorTipo(type);
     const files = await readdir(folderPath);
     return files;
   }
 
-  @get('/obtenerArchivo/{type}/{name}')
+  @get('/ObtenerArchivo/{type}/{name}')
   @oas.response.file()
   async downloadFileByName(
     @param.path.number('type') type: number,
-    @param.path.string('name') name: string,
+    @param.path.string('name') fileName: string,
     @inject(RestBindings.Http.RESPONSE) response: Response,
   ) {
-    console.log("Hol2")
-
-    const folder = this.obtenerArchivosTipo(type);
-    const file = this.validarNombreArchivo(folder,  name);
-    response.download(file, name);
+    const folder = this.ObtenerArchivosPorTipo(type);
+    const file = this.ValidarNombreDeArchivo(folder, fileName);
+    response.download(file, fileName);
     return response;
   }
 
-  /**Get the folder when files are uploaded by type */
-
-  private obtenerArchivosTipo(tipo: number) {
+  /**
+   * Get the folder when files are uploaded by type
+   * @param type
+   */
+  private ObtenerArchivosPorTipo(tipo: number) {
     let filePath = '';
-    console.log("Hola1")
     switch (tipo) {
-      //amusement
+      // amusement
       case 1:
-
         filePath = path.join(parentDir, GeneralConfig.PathImagenesProperty);
-
         break;
       case 2:
         filePath = path.join(parentDir, GeneralConfig.PathImagenesProperty);
+        break;
       case 3:
         break;
     }
     return filePath;
   }
 
-  private validarNombreArchivo(folder: string, fileName: string) {
+  /**
+   * Validate file names to prevent them goes beyond the designated directory
+   * @param fileName - File name
+   */
+  private ValidarNombreDeArchivo(folder: string, fileName: string) {
     const resolved = path.resolve(folder, fileName);
     if (resolved.startsWith(folder)) return resolved;
-
-    throw new HttpErrors[400](`Archivo invalido: ${fileName}`);
+    throw new HttpErrors[400](`Este archivo es inválido: ${fileName}`);
   }
-
-
-
-
 }

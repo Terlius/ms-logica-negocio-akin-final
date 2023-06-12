@@ -11,27 +11,11 @@ export class PropertyType extends Entity {
   id?: number;
 
   @property({
-    type: 'boolean',
-    default: false,
-  })
-  apartment?: boolean;
-
-  @property({
-    type: 'boolean',
-    default: false,
-  })
-  house?: boolean;
-
-  @property({
-    type: 'boolean',
-    default: false,
-  })
-  farm?: boolean;
-
-  @property({
     type: 'string',
+    required: true,
   })
-  other?: string;
+  typeName?: string;
+
 
   @hasMany(() => Property)
   properties: Property[];
